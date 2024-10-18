@@ -66,7 +66,52 @@ sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 ```
 
-## Passo 4: Verificar a Instalação
+## Passo 4: Instalar o Go
+
+### 4.1: Instalar o Go
+
+Use o seguinte comando para instalar o Go diretamente do repositório:
+
+```bash
+sudo apt install golang-go -y
+```
+
+### 4.2: Verificar a Instalação do Go
+
+Verifique se o Go foi instalado corretamente:
+
+```bash
+go version
+```
+
+## Passo 5: Instalar o LazyDocker
+
+### 5.1: Baixar o LazyDocker
+
+Primeiro, certifique-se de que você tem o Go instalado (veja o Passo 4). Em seguida, use o seguinte comando para baixar e instalar o LazyDocker:
+
+```bash
+go install github.com/jesseduffield/lazydocker@latest
+```
+
+### 5.2: Adicionar o Go Bin ao seu PATH
+
+O LazyDocker é instalado no diretório `GOPATH/bin`, que pode não estar no seu PATH por padrão. Para adicioná-lo, você pode executar:
+
+```bash
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### 5.3: Verificar a Instalação do LazyDocker
+
+Verifique se o LazyDocker foi instalado corretamente:
+
+```bash
+lazydocker
+```
+
+## Passo 6: Verificar a Instalação
 
 Verifique se o Docker e o Docker Compose foram instalados corretamente:
 
@@ -75,7 +120,7 @@ docker --version
 docker-compose --version
 ```
 
-## Passo 5: Criar Usuários para os Alunos
+## Passo 7: Criar Usuários para os Alunos
 
 Crie usuários para cada dupla de alunos no sistema:
 
@@ -91,7 +136,7 @@ sudo usermod -aG docker duplaum
 sudo usermod -aG docker dupladois
 ```
 
-## Passo 6: Configurar SSH
+## Passo 8: Configurar SSH
 
 Certifique-se de que o SSH está instalado e ativo para que os alunos possam acessar o servidor:
 
@@ -101,7 +146,7 @@ sudo systemctl enable ssh
 sudo systemctl start ssh
 ```
 
-## Passo 7: Criar a Imagem Docker
+## Passo 9: Criar a Imagem Docker
 
 Crie um arquivo chamado `Dockerfile` com o seguinte conteúdo:
 
@@ -128,7 +173,7 @@ EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
 ```
 
-### 7.1: Construir a Imagem
+### 9.1: Construir a Imagem
 
 No diretório onde o `Dockerfile` está localizado, execute o seguinte comando para construir a imagem:
 
