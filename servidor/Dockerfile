@@ -1,0 +1,20 @@
+# Dockerfile
+FROM ubuntu:20.04
+
+# Instalar SSH
+RUN apt-get update && apt-get install -y openssh-server
+
+# Criar diretório para o SSH
+RUN mkdir /var/run/sshd
+
+# Definir a senha do usuário root (opcional)
+RUN echo 'root:senha' | chpasswd
+
+# Permitir login como root
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# Expor a porta do SSH
+EXPOSE 22
+
+# Iniciar o serviço SSH
+CMD ["/usr/sbin/sshd", "-D"]
