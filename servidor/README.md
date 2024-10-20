@@ -1,6 +1,6 @@
-# Configuração do Servidor Host
+# Configuração do Servidor com Docker
 
-Este documento descreve o processo de configuração do servidor host que irá hospedar os contêineres Docker para o desafio.
+Este documento descreve como configurar um servidor com Docker para hospedar contêineres utilizando SSH e TTYD.
 
 ## Pré-requisitos
 
@@ -52,106 +52,14 @@ Isso permite que você execute comandos Docker sem `sudo`.
 sudo usermod -aG docker $USER
 ```
 
-## Passo 3: Instalar o Docker Compose
+## Passo 3: Criar a Imagem Docker para SSH
 
-### 3.1: Baixar a Última Versão do Docker Compose
+### 3.1: Criar o Dockerfile para SSH
 
-```bash
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-```
-
-### 3.2: Dar Permissões de Execução
-
-```bash
-sudo chmod +x /usr/local/bin/docker-compose
-```
-
-## Passo 4: Instalar o Go
-
-### 4.1: Instalar o Go
-
-Use o seguinte comando para instalar o Go diretamente do repositório:
-
-```bash
-sudo apt install golang-go -y
-```
-
-### 4.2: Verificar a Instalação do Go
-
-Verifique se o Go foi instalado corretamente:
-
-```bash
-go version
-```
-
-## Passo 5: Instalar o LazyDocker
-
-### 5.1: Baixar o LazyDocker
-
-Primeiro, certifique-se de que você tem o Go instalado (veja o Passo 4). Em seguida, use o seguinte comando para baixar e instalar o LazyDocker:
-
-```bash
-go install github.com/jesseduffield/lazydocker@latest
-```
-
-### 5.2: Adicionar o Go Bin ao seu PATH
-
-O LazyDocker é instalado no diretório `GOPATH/bin`, que pode não estar no seu PATH por padrão. Para adicioná-lo, você pode executar:
-
-```bash
-echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### 5.3: Verificar a Instalação do LazyDocker
-
-Verifique se o LazyDocker foi instalado corretamente:
-
-```bash
-lazydocker
-```
-
-## Passo 6: Verificar a Instalação
-
-Verifique se o Docker e o Docker Compose foram instalados corretamente:
-
-```bash
-docker --version
-docker-compose --version
-```
-
-## Passo 7: Criar Usuários para os Alunos
-
-Crie usuários para cada dupla de alunos no sistema:
-
-```bash
-sudo adduser duplaum
-sudo adduser dupladois
-```
-
-Adicione os usuários ao grupo Docker:
-
-```bash
-sudo usermod -aG docker duplaum
-sudo usermod -aG docker dupladois
-```
-
-## Passo 8: Configurar SSH
-
-Certifique-se de que o SSH está instalado e ativo para que os alunos possam acessar o servidor:
-
-```bash
-sudo apt install openssh-server -y
-sudo systemctl enable ssh
-sudo systemctl start ssh
-```
-
-## Passo 9: Criar a Imagem Docker
-
-Crie um arquivo chamado `Dockerfile` com o seguinte conteúdo:
+Crie um arquivo chamado `Dockerfile-SSH` com o seguinte conteúdo:
 
 ```dockerfile
-# Dockerfile
+# Dockerfile-SSH
 FROM ubuntu:20.04
 
 # Instalar SSH
@@ -173,16 +81,78 @@ EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
 ```
 
-### 9.1: Construir a Imagem
+### 3.2: Construir a Imagem SSH
 
-No diretório onde o `Dockerfile` está localizado, execute o seguinte comando para construir a imagem:
+No diretório onde o `Dockerfile-SSH` está localizado, execute o seguinte comando para construir a imagem:
 
 ```bash
-docker build -t ubuntu .
+docker build -t ubuntu-ssh -f Dockerfile-SSH .
+```
+
+## Passo 4: Criar a Imagem Docker para TTYD
+
+### 4.1: Criar o Dockerfile para TTYD
+
+Crie um arquivo chamado `Dockerfile-TTYD` com o seguinte conteúdo:
+
+```dockerfile
+# Dockerfile-TTYD
+FROM ubuntu:latest
+
+# Definir variável de ambiente para evitar interatividade durante a instalação
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar dependências necessárias
+RUN apt-get update && \
+    apt-get install -y build-essential cmake git libjson-c-dev libwebsockets-dev \
+    && apt-get install -y ttyd bash && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar o TTYD a partir do repositório Git
+RUN git clone https://github.com/tsl0922/ttyd.git && \
+    cd ttyd && mkdir build && cd build && cmake .. && make && make install && \
+    cd ../.. && rm -rf ttyd
+
+# Expor a porta do TTYD
+EXPOSE 7681
+
+# Comando para rodar o terminal via TTYD com a opção --writable
+CMD ["/bin/bash", "-c", "script -f /var/log/tty-session.log -c 'ttyd --writable -p 7681 /bin/bash'"]
+```
+
+### 4.2: Construir a Imagem TTYD
+
+No diretório onde o `Dockerfile-TTYD` está localizado, execute o seguinte comando para construir a imagem:
+
+```bash
+docker build -t ubuntu-ttyd -f Dockerfile-TTYD .
+```
+
+## Passo 5: Iniciar Contêineres
+
+### 5.1: Iniciar o Contêiner SSH
+
+Para iniciar o contêiner SSH, use o seguinte comando:
+
+```bash
+docker run -d -p 2222:22 --name meu_container_ssh ubuntu-ssh
+```
+
+### 5.2: Iniciar o Contêiner TTYD
+
+Para iniciar o contêiner TTYD, use o seguinte comando:
+
+```bash
+docker run -d -p 7681:7681 --name meu_container_ttyd ubuntu-ttyd
 ```
 
 ## Conclusão
 
-O servidor está agora configurado e pronto para hospedar contêineres Docker para o desafio. Os alunos devem ser capazes de acessar seus contêineres usando suas contas individuais. Além disso, a imagem Docker com o SSH está pronta para ser utilizada.
+Agora você tem dois contêineres em execução: um com SSH e outro com TTYD. Você pode acessar o contêiner SSH usando um cliente SSH:
 
-Se você tiver alguma dúvida, consulte a documentação do Docker ou peça ajuda ao seu instrutor.
+```bash
+ssh root@localhost -p 2222
+```
+
+E você pode acessar o terminal via TTYD em um navegador, acessando `http://localhost:7681`.

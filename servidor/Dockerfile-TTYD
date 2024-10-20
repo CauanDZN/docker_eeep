@@ -1,0 +1,23 @@
+# Usar uma imagem base (Ubuntu)
+FROM ubuntu:latest
+
+# Definir variável de ambiente para evitar interatividade durante a instalação
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar dependências necessárias
+RUN apt-get update && \
+    apt-get install -y build-essential cmake git libjson-c-dev libwebsockets-dev \
+    && apt-get install -y ttyd bash && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar o TTYD a partir do repositório Git
+RUN git clone https://github.com/tsl0922/ttyd.git && \
+    cd ttyd && mkdir build && cd build && cmake .. && make && make install && \
+    cd ../.. && rm -rf ttyd
+
+# Expor a porta do TTYD
+EXPOSE 7681
+
+# Comando para rodar o terminal via TTYD com a opção --writable
+CMD ["/bin/bash", "-c", "script -f /var/log/tty-session.log -c 'ttyd --writable -p 7681 /bin/bash'"]
